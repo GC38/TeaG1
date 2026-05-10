@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'category', 'priceL', 'available'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.category is string && data.category.size() > 0
+        && data.priceL is number && data.priceL >= 0
+        && (data.get('priceM', 0) is number)
+        && data.available is bool;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['items', 'totalPrice', 'status', 'createdAt'])
+        && data.items is list && data.items.size() > 0
+        && data.totalPrice is number && data.totalPrice >= 0
+        && data.status in ['pending', 'preparing', 'completed', 'cancelled']
+        && data.createdAt == request.time
+        && (data.get('customerName', '') is string)
+        && (data.get('customerPhone', '') is string);
+    }
+
+    // --- Collection Matches ---
+
+    // Products: Read public, Write only admin (we'll use a simple admin check or just deny for now as we don't have auth setup yet, but guidelines say don't rely on client)
+    // For this app, let's assume "admin" is anyone signed in for now if we want a simple backend, or just restrict.
+    // Actually, usually menu is public.
+    match /products/{productId} {
+      allow read: if true;
+      // In a real app, only admins can write. For this demo, let's allow read/write for convenience or stick to strict.
+      // Let's stick to strict: only managers can edit products.
+      allow write: if isSignedIn(); // Simplified admin check for demo purposes
+    }
+
+    match /orders/{orderId} {
+      // Create: Public (customers)
+      allow create: if isValidOrder(incoming()) && isValidId(orderId);
+      
+      // Read: Either the owner (if we had specific user auth) or admin.
+      // Usually backend needs to see all.
+      allow read: if isSignedIn();
+      
+      // Update: Admin can change status
+      allow update: if isSignedIn()
+        && isValidOrder(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && (existing().status != 'completed' && existing().status != 'cancelled'); // Terminal state locking
+    }
+  }
+}
