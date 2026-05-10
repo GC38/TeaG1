@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A tea menu item available for order.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the tea." },
+        "category": { "type": "string", "description": "Category like 'Original Tea' or 'Milk Tea'." },
+        "priceM": { "type": "number", "description": "Price for medium size. Use 0 if not available." },
+        "priceL": { "type": "number", "description": "Price for large size. Use 0 if not available." },
+        "available": { "type": "boolean", "description": "Whether the item is currently available." }
+      },
+      "required": ["name", "category", "priceL"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer's tea order.",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "items": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "productName": { "type": "string" },
+              "size": { "type": "string", "enum": ["M", "L"] },
+              "sugar": { "type": "string" },
+              "ice": { "type": "string" },
+              "toppings": { "type": "array", "items": { "type": "string" } },
+              "price": { "type": "number" },
+              "quantity": { "type": "number" }
+            }
+          }
+        },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "preparing", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "totalPrice", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "Product",
+      "description": "Collection of available tea products."
+    },
+    "orders": {
+      "schema": "Order",
+      "description": "Collection of customer orders."
+    }
+  }
+}
