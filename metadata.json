@@ -1,0 +1,8 @@
+{
+  "name": "TeaOrder - 專業茶飲點單系統",
+  "description": "提供完整的前台點單與後台訂單管理系統，支援自定義甜度、冰量與加料，並即時同步至 Firebase。",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "firebase"
+  ]
+}
